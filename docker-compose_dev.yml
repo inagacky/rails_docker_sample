@@ -1,39 +1,60 @@
 version: '3'
 services:
-  collabospace_app:
-    build: apps
-    container_name: collabospace_app
+  apps:
+    build:
+      context: apps
+      args:
+        START_ENV: development
+    container_name: collabospace_app 
+    tty: true
     ports:
-      - 8080:8080
+      - 3000:3000
     environment:
-      GOPATH: "/go"
-      COLLABOSPACE_DB_USER: root
-      COLLABOSPACE_DB_PASS: sample
-      COLLABOSPACE_DB_NAME: sample
-      COLLABOSPACE_DB_HOSTNAME: go_gin_api_db
-      COLLABOSPACE_DB_PORT: 3306
+      TZ: "Asia/Tokyo"
+      APP_DATABASE_HOST: collabospace_db
+      APP_DATABASE: collabospace
+      APP_DATABASE_USER: root
+      APP_DATABASE_PASSWORD: collabospace 
+      APP_SERVER_ENV: development
+      APP_SERVER_ENV_SMTP_HOSTNAME: collabospace_smtp
+      APP_SERVER_ENV_SMTP_PORT: 1025
+      RAILS_ENV: development
+    depends_on:
+      - db
+    volumes:
+      - ./apps/app:/usr/src/app
     restart: unless-stopped
     networks:
       - collabospace_net
 
-  collabospace_db:
+  db:
     build: db
     container_name: collabospace_db
     ports:
-      - 3306:3306
+      - 33306:3306
     volumes:
-      - mysql-collabospace-app-data:/var/lib/mysql
+      - mysql-data:/var/lib/mysql
     environment:
-      MYSQL_ROOT_PASSWORD: sample
-      MYSQL_APP_USER: sample
-      MYSQL_APP_USER_PASSWORD: sample
-      MYSQL_DATABASE: collabospace 
+      TZ: "Asia/Tokyo"
+      MYSQL_ROOT_PASSWORD: collabospace 
+    restart: unless-stopped
+    networks:
+      - collabospace_net
+  smtp:
+    image: sj26/mailcatcher
+    container_name: collabospace_smtp
+    ports:
+      - 3080:1080
+      - 3025:1025
+    environment:
+      TZ: "Asia/Tokyo"
     restart: unless-stopped
     networks:
       - collabospace_net
 volumes:
-  mysql-collabospace-app-data:
+  mysql-data:
     driver: local
+  bundle:
 
 networks:
   collabospace_net:

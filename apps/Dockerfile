@@ -1,29 +1,42 @@
-From golang:1.12.4
+FROM ruby:2.6.3
 
-MAINTAINER inagacky
+MAINTAINER inagacky 
+
+ARG USER="rails"
+ARG UID="1000"
+ARG GROUP="rails"
+ARG GID="1000"
+ARG WORKSPACE=/usr/src/app
+ARG START_ENV=development
 
 ENV LANG C.UTF-8
-ENV TZ Asia/Tokyo
+ENV RAILS_ENV $START_ENV
 
-COPY api /go/src/github.com/inagacky/go_gin_api/src/api
-RUN mkdir -p /go/src/github.com/inagacky/go_gin_api/log
-WORKDIR /go/src/github.com/inagacky/go_gin_api/src/api
+RUN apt-get update && \
+    apt-get install -y vim less sudo
 
-RUN apt-get update \
-  && apt-get install -y git \
-  && go get -u github.com/golang/dep/cmd/dep \
-  && dep ensure
+RUN mkdir -p $WORKSPACE
+WORKDIR $WORKSPACE
 
-# debug
-# RUN go get github.com/derekparker/delve/cmd/dlv
-# ホットリロード
-# RUN go get github.com/oxequa/realize
+COPY app/Gemfile $WORKSPACE
+COPY app/Gemfile.lock $WORKSPACE
 
-EXPOSE 8080
+RUN apt-get install -y build-essential libpq-dev imagemagick libmagickcore-dev libmagickwand-dev nodejs && \
+    gem install bundler
 
-#RUN go build -gcflags "all=-N -l" -o /server main.go
-#RUN realize start --run --no-config
+COPY app $WORKSPACE
 
-CMD ["go", "run", "main.go"]
-#CMD ["dlv", "--listen=:2345", "--headless=true", "--api-version=2", "exec", "/server"]"
-#CMD ["dlv", "debug", "--listen=:2345", "--headless=true", "--api-version=2", "main.go"]"
+RUN bundle install
+
+RUN groupadd -r --gid $GID $GROUP && \
+    useradd -r --uid $UID --gid $GID $USER && \
+    chown -R $USER:$GROUP $WORKSPACE
+RUN echo "${USER} ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers.d/${USER}
+
+ENV SECRET_KEY_BASE "`bundle exec rake secret`"
+
+USER $USER
+
+EXPOSE 3000
+CMD ["bundle", "exec", "rails", "s", "-p", "3000", "-b", "0.0.0.0"]
+
