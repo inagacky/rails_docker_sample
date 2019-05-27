@@ -1,5 +1,1 @@
-# collabospace
-### Overview
-こうゆうのやりたいんですけど、一緒にやりませんか？を実現できるサービス
-
-### 画面一覧
+# rails_docker_sample
