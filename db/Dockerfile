@@ -1,6 +1,6 @@
-From mysql:8.0.13
+FROM mysql:8.0.13
 
-MAINTAINER inagacky
+LABEL maintainer inagacky
 
 ENV LANG C.UTF-8
 ENV TZ Asia/Tokyo

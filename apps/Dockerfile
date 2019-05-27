@@ -1,29 +1,33 @@
-From golang:1.12.4
+FROM ruby:2.6.3
 
-MAINTAINER inagacky
+LABEL maintainer inagacky
 
 ENV LANG C.UTF-8
 ENV TZ Asia/Tokyo
 
-COPY api /go/src/github.com/inagacky/go_gin_api/src/api
-RUN mkdir -p /go/src/github.com/inagacky/go_gin_api/log
-WORKDIR /go/src/github.com/inagacky/go_gin_api/src/api
-
 RUN apt-get update \
-  && apt-get install -y git \
-  && go get -u github.com/golang/dep/cmd/dep \
-  && dep ensure
+  && apt-get install -y libpq-dev build-essential nodejs sudo default-libmysqlclient-dev mysql-client \
+  && gem install bundler \
+  && gem install rails
 
-# debug
-# RUN go get github.com/derekparker/delve/cmd/dlv
-# ホットリロード
-# RUN go get github.com/oxequa/realize
+ENV APP_HOME /var/www/app
+ENV USER    rails_dev
 
-EXPOSE 8080
+# User
+RUN useradd -d /home/$USER -m -s /bin/bash $USER
+RUN echo "$USER:$USER" | chpasswd
+RUN echo "$USER ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/$USER
+USER $USER
+ENV HOME /home/$USER
 
-#RUN go build -gcflags "all=-N -l" -o /server main.go
-#RUN realize start --run --no-config
+ADD app $APP_HOME
+RUN sudo chown -R $USER:$USER $APP_HOME
+WORKDIR $APP_HOME
 
-CMD ["go", "run", "main.go"]
-#CMD ["dlv", "--listen=:2345", "--headless=true", "--api-version=2", "exec", "/server"]"
-#CMD ["dlv", "debug", "--listen=:2345", "--headless=true", "--api-version=2", "main.go"]"
+RUN sudo chown $USER:$USER Gemfile
+RUN sudo chown $USER:$USER Gemfile.lock
+RUN bundle install
+
+EXPOSE 3000
+
+CMD ["bundle", "exec", "rails", "s", "-p", "3000", "-b", "0.0.0.0"]

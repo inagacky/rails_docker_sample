@@ -4,17 +4,21 @@ services:
     build: apps
     container_name: collabospace_app
     ports:
-      - 8080:8080
+      - 3000:3000
+    volumes:
+      - ./apps/app:/var/www/app
+      - bundle-collabospace-app-data:/usr/local/bundle
     environment:
-      GOPATH: "/go"
       COLLABOSPACE_DB_USER: root
       COLLABOSPACE_DB_PASS: sample
-      COLLABOSPACE_DB_NAME: sample
-      COLLABOSPACE_DB_HOSTNAME: go_gin_api_db
+      COLLABOSPACE_DB_NAME: collabospace
+      COLLABOSPACE_DB_HOST: collabospace_db
       COLLABOSPACE_DB_PORT: 3306
     restart: unless-stopped
     networks:
       - collabospace_net
+    depends_on:
+      - collabospace_db
 
   collabospace_db:
     build: db
@@ -33,6 +37,8 @@ services:
       - collabospace_net
 volumes:
   mysql-collabospace-app-data:
+    driver: local
+  bundle-collabospace-app-data:
     driver: local
 
 networks:
